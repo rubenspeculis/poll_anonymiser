@@ -18,7 +18,7 @@ function anonymous_user_feeds_importer_default_rules_configuration() {
         { "variable_add" : {
             "USING" : {
               "type" : "text",
-              "value" : "\\u003C?php \\r\\n$title = $node-\\u003Etitle;\\r\\n$token = hash(\\u0027sha256\\u0027, $title);\\r\\necho $token; ?\\u003E\\r\\n\\r\\n\\r\\n"
+              "value" : "\\u003C?php \\r\\n$title = $node-\\u003Etitle;\\r\\n$token = hash(\\u0027sha256\\u0027, $title);\\r\\n$token = hash(\\u0027sha256\\u0027, $title);\\r\\necho trim($token); ?\\u003E\\r\\n\\r\\n\\r\\n"
             },
             "PROVIDE" : { "variable_added" : { "token" : "Token" } }
           }
