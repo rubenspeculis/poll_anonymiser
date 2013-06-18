@@ -7,6 +7,7 @@
  */
 
 function poll_anonymiser_install() {
+  // Get language
   $t = get_t();
 
   $anonymous_user = array(
@@ -64,7 +65,8 @@ function poll_anonymiser_install() {
  **/
 
 function poll_anonymiser_uninstall() {
-  node_type_delete('anonymous_user');
+  $status = node_type_delete('anonymous_user');
+   
   field_delete_field('field_poll_anonymiser_token');
 }
  

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Anonymous User Feeds Importer feature.
+ */
+
+include_once 'anonymous_user_feeds_importer.features.inc';
