@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * Implement hook_install()
+ *
+ * Creates the anonymous_user content type
+ */
+
+function poll_anonymiser_install() {
+  $t = get_t();
+
+  $anonymous_user = array(
+    'type' => 'anonymous_user',
+    'name' => $t('Anonymous User'),
+    'base' => 'node_content',
+    'description' => $t('This is the content type for anonymising survey submissions'),
+    'title_label' => $t('Email address'),
+    'custom' => TRUE
+  );
+
+  $anonymous_user = node_type_set_defaults($anonymous_user);
+
+  $token_field = array(
+    'field_name' => 'field_poll_anonymiser_token',
+    'label' => $t('Poll Anonymiser Token'),
+    'cardinality' => 1,
+    'type' => 'text'
+  );
+  
+  $token_instance = array(
+    'field_name' => 'field_poll_anonymiser_token',
+    'label' => $t('Poll Anonymiser Token'),
+    'type' => 'text',
+    'widget' => array(
+      'type' => 'textfield',
+    ),
+    'settings' => array(
+      'text_processing' => 1,
+    ),
+    'entity_type' => 'node',
+    'bundle' => 'anonymous_user',
+  );  
+
+  $status = node_type_save($anonymous_user);
+  
+  $t_args = array('%name' => $anonymous_user->name);
+  if($status == SAVED_UPDATE){
+    drupal_set_message($t('The content type %name has been updated.',$t_args));
+  } 
+  elseif($status == SAVED_NEW){
+    drupal_set_message($t('The content type %name has been created.',$t_args));
+    watchdog('node', 'Added content type %name.', $t_args, WATCHDOG_NOTICE, l($t('view'),'admin/structure/types'));
+  } 
+  
+  if(!field_info_field($token_field['field_name'])){
+    field_create_field($token_field);
+    field_create_instance($token_instance);
+  }
+    
+}
+
+/**
+ * Implement hook_uninstall()
+ **/
+
+function poll_anonymiser_uninstall() {
+  node_type_delete('anonymous_user');
+  field_delete_field('field_poll_anonymiser_token');
+}
+ 
+

@@ -1,0 +1,8 @@
+name = Poll Anonymiser
+description = This module adds the ability to validate a form submission against a list of tokens storred agains email addresses.
+core = 7.x
+package = Survey
+dependencies[] = webform
+dependencies[] = webform_validation
+dependencies[] = feeds
+
