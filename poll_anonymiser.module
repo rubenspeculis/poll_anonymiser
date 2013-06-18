@@ -44,3 +44,72 @@ function poll_anonymiser_webform_validation_validate($validator_name, $items, $c
     }
   }
 }
+
+/**
+ * Implement hook_menu().
+ */
+
+function poll_anonymiser_menu() {
+  $items = array();
+  $items['node/%node/email_poll'] = array(
+    'title' => 'Email Poll to Anonymous Users',
+    'page callback' => 'poll_anonymiser_email',
+    'page arguments' => array(1),
+    'access callback' => 'poll_anonymiser_access_check',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+function poll_anonymiser_access_check($node) {
+  if($node->type == 'webform') {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+function poll_anonymiser_email($node) {
+  global $base_url;
+  $nid = $node->nid;
+  $path = drupal_lookup_path('alias', 'node/'.$nid);
+
+  $anon_users = array();
+
+  $t = get_t(); 
+  
+  $type = 'anonymous_user';
+  $nodes = node_load_multiple(array(), array('type' => $type));
+  foreach($nodes as $anon) {
+    $combine = array($anon->title => trim($anon->field_poll_anonymiser_token['und'][0]['value']));
+    array_push($anon_users, $combine);
+  }
+
+  $module = 'poll_anonymiser';
+  $key = 'survey-'.$nid;
+  $language = language_default();
+  $parrams = array();
+  $from = NULL;
+  $send = FALSE;
+
+  $i = 0;
+  foreach ($anon_users as $anon_user){
+    foreach($anon_user as $email => $token){
+      $message = drupal_mail($module, $key, $email, $language, $parrams, $from, $send);
+      $message['subject'] = $node->title . ' is open for voting';
+      $message['body'][] = t('Hi,');
+      $message['body'][] = t('The above mentioned survey is now open for voting. It can be accessed at: ' . $base_url . '/' . $path);
+      $message['body'][] = t('You will need to insert your unique token key: '. $token);
+      $message['body'][] = t('Your token is unique to you and will allow you to vote just once. Please do not share it with anyone else.');
+      $message['body'][] = t('---');
+      $system = drupal_mail_system($module, $key);
+      $message = $system->format($message);
+
+      $message['result'] = $system->mail($message);
+      $i++;
+    }
+  }
+
+  drupal_set_message(t($i . ' Emails were sent'));
+  drupal_goto($path); 
+}
