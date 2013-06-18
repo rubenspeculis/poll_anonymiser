@@ -1,3 +1,46 @@
 <?php
 
+/**
+ * Implementation of hook_webform_validation_validators() 
+ */
 
+function poll_anonymiser_webform_validation_validators() {
+  $t = get_t(); 
+  return array(
+    'validate_anonymous_hash' => array(
+      'name' => $t('Validate Unique Hash'),
+      'description' => $t('Verifies that the hash inputed is set in the Anonymous User list'),
+      'component_types' => array(
+        'textfield',
+      ),
+    )
+  ); 
+} 
+
+/**
+ * Implementation of hook_webform_validation_validate().
+ */
+
+function poll_anonymiser_webform_validation_validate($validator_name, $items, $components, $rule) {
+  $t = get_t(); 
+  
+  $type = 'anonymous_user';
+  $nodes = node_load_multiple(array(), array('type' => $type));
+  $valid_hashes = array();
+  foreach($nodes as $anon) {
+    array_push($valid_hashes, trim($anon->field_poll_anonymiser_token['und'][0]['value']));
+  }
+  
+  if($items) {
+    switch ($validator_name) {
+      case 'validate_anonymous_hash':
+        foreach($items as $key => $val) {
+          if($val && (!in_array($val, $valid_hashes))) {
+            $errors[$key] = $t('%item is not a valid secure value', array('%item' => $components[$key]['name']));
+            return $errors;
+          }
+        }
+        break;
+    }
+  }
+}
