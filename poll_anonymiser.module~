@@ -122,8 +122,7 @@ function poll_anonymiser_permission() {
     'poll Anonymiser permission' => array(
       'title' => t('Email anonymous users for survey/poll'),
       'description' => t('Allow users to bulk email anonymous users their token and url for survey')
-    )
-  );
+    );
 }
 
 
