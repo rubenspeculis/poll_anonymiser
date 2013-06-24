@@ -117,17 +117,20 @@ function poll_anonymiser_email($form, $form_state) {
   $email_subject = $form['email_subject']['#value'];
   $email_subject = str_replace('%title', $node->title, $email_subject);
   $email_body = $form['email_body']['#value'];
-  
 
   $anon_users = array();
 
-  $t = get_t(); 
-  
+  $t = get_t();
+
   $type = 'anonymous_user';
+  $needle = array('nid' => $nid);
+
   $nodes = node_load_multiple(array(), array('type' => $type));
   foreach($nodes as $anon) {
-    $combine = array($anon->title => trim($anon->field_poll_anonymiser_token['und'][0]['value']));
-    array_push($anon_users, $combine);
+    if(!in_array($needle, $anon->field_poll_anonymiser_reference['und'])){
+      $combine = array($anon->title => array(trim($anon->field_poll_anonymiser_token['und'][0]['value']), $anon->nid));
+      array_push($anon_users, $combine);
+    }
   }
 
   $module = 'poll_anonymiser';
@@ -142,21 +145,21 @@ function poll_anonymiser_email($form, $form_state) {
     foreach($anon_user as $email => $token){
       $message = drupal_mail($module, $key, $email, $language, $parrams, $from, $send);
       $message['subject'] = $email_subject;
-      /*
-      $message['body'][] = t('Hi,');
-      $message['body'][] = t('The above mentioned survey is now open for voting. It can be accessed at: ' . $base_url . '/' . $path);
-      $message['body'][] = t('You will need to insert your unique token key: '. $token);
-      $message['body'][] = t('Your token is unique to you and will allow you to vote just once. Please do not share it with anyone else.');
-      $message['body'][] = t('---');
-       */
       $email_body = str_replace('%path', $path, $email_body);
-      $email_body = str_replace('%token', $token, $email_body);
+      $email_body = str_replace('%token', $token[0], $email_body);
       $message['body'][] = $email_body;
       $system = drupal_mail_system($module, $key);
       $message = $system->format($message);
 
       $message['result'] = $system->mail($message);
-      $i++;
+      if ($message['result']){
+        $i++;
+        $anon_update = node_load($token[1]);
+        print_r($nid);
+        print_r($anon_update);
+        $anon_update->field_poll_anonymiser_reference['und'][$nid] = array('nid' => $nid);
+        node_save($anon_update);
+      }
     }
   }
 

@@ -123,10 +123,14 @@ function poll_anonymiser_email($form, $form_state) {
   $t = get_t();
 
   $type = 'anonymous_user';
+  $needle = array('nid' => $nid);
+
   $nodes = node_load_multiple(array(), array('type' => $type));
   foreach($nodes as $anon) {
-    $combine = array($anon->title => trim($anon->field_poll_anonymiser_token['und'][0]['value']));
-    array_push($anon_users, $combine);
+    if(!in_array($needle, $anon->field_poll_anonymiser_reference['und'])){
+      $combine = array($anon->title => array(trim($anon->field_poll_anonymiser_token['und'][0]['value']), $anon->nid));
+      array_push($anon_users, $combine);
+    }
   }
 
   $module = 'poll_anonymiser';
@@ -142,13 +146,20 @@ function poll_anonymiser_email($form, $form_state) {
       $message = drupal_mail($module, $key, $email, $language, $parrams, $from, $send);
       $message['subject'] = $email_subject;
       $email_body = str_replace('%path', $path, $email_body);
-      $email_body = str_replace('%token', $token, $email_body);
+      $email_body = str_replace('%token', $token[0], $email_body);
       $message['body'][] = $email_body;
       $system = drupal_mail_system($module, $key);
       $message = $system->format($message);
 
       $message['result'] = $system->mail($message);
-      $i++;
+      if ($message['result']){
+        $i++;
+        $anon_update = node_load($token[1]);
+        print_r($nid);
+        print_r($anon_update);
+        $anon_update->field_poll_anonymiser_reference['und'][] = array('nid' => $nid);
+        node_save($anon_update);
+      }
     }
   }
 

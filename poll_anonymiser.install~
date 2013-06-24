@@ -74,9 +74,7 @@ function poll_anonymiser_install() {
     'field_name' => 'field_poll_anonymiser_reference',
     'label' => 'Poll References',
     'type' => 'node_reference',
-    'widget' => array(
-      'type' => 'options_buttons'
-    ),
+    'widget' => array(),
     'entity_type' => 'node',
     'bundle' => 'anonymous_user'
   );
