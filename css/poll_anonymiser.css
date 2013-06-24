@@ -1,0 +1,7 @@
+.page-node-email-poll label {
+  display: block !Important;
+}
+
+.page-node-email-poll .pane-node-webform {
+  display: none;
+}

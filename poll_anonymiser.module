@@ -53,8 +53,8 @@ function poll_anonymiser_menu() {
   $items = array();
   $items['node/%node/email_poll'] = array(
     'title' => 'Email Poll to Anonymous Users',
-    'page callback' => 'poll_anonymiser_email',
-    'page arguments' => array(1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('poll_anonymiser_email_form'),
     'access callback' => 'poll_anonymiser_access_check',
     'access arguments' => array(1),
     'type' => MENU_LOCAL_TASK,
@@ -69,15 +69,59 @@ function poll_anonymiser_access_check($node) {
   return FALSE;
 }
 
-function poll_anonymiser_email($node) {
+/**
+ * Page callback: Email Function
+ *
+ */
+function poll_anonymiser_email_form($form, &$form_state) {
+  $node = menu_get_object();
+
+  drupal_add_css(drupal_get_path('module', 'poll_anonymiser') . '/css/poll_anonymiser.css', array('group' => CSS_DEFAULT, 'every_page' => TRUE));
+
+  $form['email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject for email'),
+    '#default_value' => variable_get('email_subject'),
+    '#description' => t('This is the subject of the email to be sent,<br />Available replacements are:<ul><li>%title for title of survey</li></ul>'),
+    '#required' => TRUE
+  );
+
+  $form['email_body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body text for email to be sent out'),
+    '#default_value' => variable_get('email_body'),
+    '#description' => t('This is the body of the email to be sent,<br />Available replacements are:<ul><li>%path for path of survey</li><li>%token for the unique Token</li></ul>'),
+    '#required' => TRUE
+  );
+
+  $form['node_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $node->nid
+  );
+
+  $form['actions']['poll_email'] = array(
+    '#type' => 'submit',
+    '#value' => t('Email Survey'),
+    '#weight' => 15,
+    '#submit' => array('poll_anonymiser_email')
+  );
+  return system_settings_form($form);
+}
+
+function poll_anonymiser_email($form, $form_state) {
+
   global $base_url;
-  $nid = $node->nid;
-  $path = drupal_lookup_path('alias', 'node/'.$nid);
+  $nid = $form['node_id']['#value'];
+  $node = node_load($nid);
+  $path = $base_url . '/' .  drupal_lookup_path('alias', 'node/'.$nid);
+  $email_subject = $form['email_subject']['#value'];
+  $email_subject = str_replace('%title', $node->title, $email_subject);
+  $email_body = $form['email_body']['#value'];
 
   $anon_users = array();
 
-  $t = get_t(); 
-  
+  $t = get_t();
+
   $type = 'anonymous_user';
   $nodes = node_load_multiple(array(), array('type' => $type));
   foreach($nodes as $anon) {
@@ -96,12 +140,10 @@ function poll_anonymiser_email($node) {
   foreach ($anon_users as $anon_user){
     foreach($anon_user as $email => $token){
       $message = drupal_mail($module, $key, $email, $language, $parrams, $from, $send);
-      $message['subject'] = $node->title . ' is open for voting';
-      $message['body'][] = t('Hi,');
-      $message['body'][] = t('The above mentioned survey is now open for voting. It can be accessed at: ' . $base_url . '/' . $path);
-      $message['body'][] = t('You will need to insert your unique token key: '. $token);
-      $message['body'][] = t('Your token is unique to you and will allow you to vote just once. Please do not share it with anyone else.');
-      $message['body'][] = t('---');
+      $message['subject'] = $email_subject;
+      $email_body = str_replace('%path', $path, $email_body);
+      $email_body = str_replace('%token', $token, $email_body);
+      $message['body'][] = $email_body;
       $system = drupal_mail_system($module, $key);
       $message = $system->format($message);
 

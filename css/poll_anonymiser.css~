@@ -1,0 +1,3 @@
+.page-node-email-poll label {
+  display: block !Important;
+}
